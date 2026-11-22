@@ -25,6 +25,17 @@ export function preserveWechatLayout($: CheerioAPI, root: Element) {
     return "";
   }
   const bold = (weight:string) => /^(bold(er)?|[6-9]00)$/.test(weight);
+  // Some editors wrap a title card, including spacing blocks, in a native heading.
+  // Put the heading on its text so Markdown renders it on one line.
+  $(root).find("h1,h2,h3,h4,h5,h6").each((_, heading) => {
+    const descendants = $(heading).find(blocks);
+    if (!descendants.length) return;
+    const text = $(heading).text().trim();
+    const leaf = descendants.toArray().find(el =>
+      !$(el).find(blocks).length && text && $(el).text().trim() === text);
+    if (leaf) leaf.name = heading.name;
+    heading.name = "div";
+  });
   const inferred = new Set<Element>();
   let previousImage = false;
   for (const el of $(root).find(blocks + ",figcaption,img").toArray()) {
@@ -80,13 +91,14 @@ export function preserveWechatLayout($: CheerioAPI, root: Element) {
     }
   }
   // Resolve inherited weights per text run, including an explicit reset inside a bold span.
-  function mark(el: Element, weight: string) {
+  function mark(el: Element, weight: string, inStyledHeading = false) {
     if (["pre","code","style","script"].includes(el.name)) return;
     const next = property(el,"font-weight") || (/^(strong|b)$/.test(el.name) ? "bold" : weight);
     if (/^(strong|b)$/.test(el.name)) el.name = "span";
+    const alreadyBold = inStyledHeading || inferred.has(el);
     for (const child of [...el.children]) {
-      if (isTag(child)) mark(child,next);
-      else if (child.type === "text" && child.data.trim() && bold(next) && !$(el).parents().addBack().toArray().some(n => inferred.has(n))) $(child).wrap("<strong></strong>");
+      if (isTag(child)) mark(child,next,alreadyBold);
+      else if (child.type === "text" && child.data.trim() && bold(next) && !alreadyBold) $(child).wrap("<strong></strong>");
     }
     if (el.name === "span") $(el).replaceWith($(el).contents());
   }
