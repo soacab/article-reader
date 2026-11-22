@@ -13,3 +13,7 @@
 ## 本地直接读取
 
 在已安装技能目录运行 `node read.mjs 'https://example.org/article'`。保存可在命令末尾加 `--save-dir '/绝对路径/待读'`。抓取在独立进程中运行，失败时退出码非零；遇到重名文件自动选择新文件名。图片保存在笔记旁的独立附件目录里。
+
+## 首次配对超时怎么办
+
+如果飞书已完成授权，但 AAMP 的首次绑定在 90 秒时报超时，先用 `feishu-task-agent list` 核对新应用仍在绑定列表中，再查看 `feishu-task-agent status` 和 `logs`。本次 macOS 验收中，配对成功的一次用了 106 秒。对仍为 pending 的已有绑定，可以在交互终端运行 `AAMP_TASK_READY_TIMEOUT_MS=240000 feishu-task-agent start`，选择本次需要运行的绑定。若 AAMP 已经回退到只运行旧绑定，先告知用户已有机器人的短暂中断，在可中断时用 stop 后再运行上述 start。若机器上有多份 Codex，检查实际命中的 codex --version 与之前可用的版本。以飞书消息往返和后台服务的就绪状态验收。
