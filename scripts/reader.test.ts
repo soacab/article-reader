@@ -54,3 +54,30 @@ test("保存笔记保留标题层级、局部字重、编号标题和图片说�
   assert.ok(md.includes("前文**重点**例外后文"));
   assert.ok(md.includes("![](" + image + ")\n\n_实验结果_\n\n结语"));
 });
+
+import {answer, complete, endpoint, profileId} from "./summary.mjs";
+
+test("独立摘要接口发送指定模型与认证，失败不会切换服务", async (t) => {
+  assert.throws(()=>endpoint("http://example.org/v1"));
+  assert.throws(()=>profileId("../another-bot"));
+  const fetch = t.mock.method(globalThis,"fetch", async (url, options) => {
+    assert.equal(String(url),"https://provider.example/v1/chat/completions");
+    assert.equal(options.headers.Authorization,"Bearer fixture");
+    assert.equal(options.redirect,"error");
+    assert.deepEqual(JSON.parse(options.body),{model:"test-model",messages:[{role:"user",content:"测试"}]});
+    return Response.json({choices:[{message:{content:"两个要点"}}]});
+  });
+  const config = {base:"https://provider.example/v1/",model:"test-model"};
+  const messages = [{role:"user",content:"测试"}];
+  assert.equal(await complete(config,"fixture",messages),"两个要点");
+  fetch.mock.mockImplementation(async()=>new Response(null,{status:401}));
+  await assert.rejects(complete(config,"fixture",messages),/401/);
+  assert.equal(fetch.mock.callCount(),2);
+});
+
+test("未配置独立接口的机器人沿用自己的 AI", async (t) => {
+  const fetch = t.mock.method(globalThis,"fetch",async()=>{ throw new Error("意外调用 API"); });
+  const id = "test-" + crypto.randomUUID();
+  assert.deepEqual(await answer(id,"总结","正文"),{mode:"agent",article:"正文"});
+  assert.equal(fetch.mock.callCount(),0);
+});

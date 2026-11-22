@@ -7,11 +7,17 @@ import {fileURLToPath} from "node:url";
 import {createRequire} from "node:module";
 
 const require = createRequire(import.meta.url);
-const [url, option, destination, ...extra] = process.argv.slice(2);
+import {parseArgs} from "node:util";
+import {answer} from "./scripts/summary.mjs";
 
 async function read() {
-  if (!url || (option !== undefined && (option !== "--save-dir" || !destination)) || extra.length) {
-    throw new Error("用法：node read.mjs URL [--save-dir 目标文件夹]");
+  const {values,positionals} = parseArgs({allowPositionals:true,options:{
+    "save-dir":{type:"string"}, profile:{type:"string"}, ask:{type:"string"}
+  }});
+  const [url] = positionals;
+  const destination = values["save-dir"];
+  if (!url || positionals.length !== 1 || ((values.ask !== undefined) && (!values.ask.trim() || !values.profile))) {
+    throw new Error("用法：node read.mjs URL [--save-dir 目标文件夹] [--profile 机器人标识 --ask 阅读要求]");
   }
   const temp = await mkdtemp(path.join(tmpdir(), "article-reader-"));
   try {
@@ -23,8 +29,12 @@ async function read() {
     const result = JSON.parse(await readFile(path.join(temp, "result.json"), "utf8"));
     if (result.saved < result.total) console.error("已保存图片 " + result.saved + "/" + result.total);
     const article = path.join(temp, "article.md");
+    const respond = async () => {
+      const content = await readFile(article,"utf8");
+      return values.ask ? JSON.stringify(await answer(values.profile,values.ask,content)) : content;
+    };
     if (!destination) {
-      process.stdout.write(await readFile(article, "utf8"));
+      process.stdout.write(await respond());
       return;
     }
     const dir = path.resolve(destination);
@@ -48,6 +58,7 @@ async function read() {
         try { await link(staged, target); assetDir = undefined; console.log(target); break; }
         catch (error) { if (error.code !== "EEXIST") throw error; index++; }
       }
+      if (values.ask) console.log(await respond());
     } finally {
       if (assetDir) await rm(assetDir, {recursive: true, force: true});
       await rm(stage, {recursive: true, force: true});
