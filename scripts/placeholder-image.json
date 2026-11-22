@@ -1,0 +1,6 @@
+{
+  "sourceUrl": "https://cdn-static.sspai.com/ui/img-placeholder.png",
+  "sha256": "ef672ebe7a5eabaca62f90b8a619e31604e477561568e567ba8a96dbd448777e",
+  "verifiedAt": "2026-11-05",
+  "evidence": "tests/fixtures/web-placeholder.png；output/evaluation-web-round1/web-8/response.html 明确引用 img-placeholder.png。已目视核实灰色空占位图，仅按文件哈希拒绝，不按灰色、尺寸或 URL 关键词猜测。"
+}
