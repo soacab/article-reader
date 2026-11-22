@@ -3,6 +3,7 @@ import * as cheerio from "cheerio";
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
 import { randomUUID } from "node:crypto";
+import { preserveWechatLayout } from "./wechat-layout";
 import { safeFetch } from "./network";
 import { inspectArticle, extractTime, sanitizeContent, toMarkdown, textCount } from "./content";
 import { downloadImage } from "./images";
@@ -61,6 +62,7 @@ export async function extractWechat(itemId: string, url: string, meta: Extractio
       pre.append(code); $(element).replaceWith(pre);
     }
   });
+  if (content[0]) preserveWechatLayout($, content[0]);
   const imageUrls = new Map<string, number>();
   content.find("img").each((_, element) => {
     meta.imagesTotal++;

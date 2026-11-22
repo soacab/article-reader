@@ -38,3 +38,19 @@ test("图片写入预先创建的笔记附件目录并保留文件内容", async
     await assert.rejects(copyImages(source,target), {code: "EEXIST"});
   } finally { await rm(root, {recursive:true,force:true}); }
 });
+
+import {load} from "cheerio";
+import {preserveWechatLayout} from "./wechat-layout";
+import {sanitizeContent, toMarkdown} from "./content";
+
+test("保存笔记保留标题层级、局部字重、编号标题和图片说明", () => {
+  const image = "article-assets-00000000-0000-0000-0000-000000000000/" + "a".repeat(64) + ".png";
+  const $ = load('<article><h3>原生标题</h3><section style="text-align:center;font-size:20px"><p>02</p><p>测试，</p><p>结果</p></section>' +
+    '<p>前文<span style="font-weight:700">重点<span style="font-weight:normal">例外</span></span>后文</p>' +
+    '<figure><img src="'+image+'"><figcaption>实验结果</figcaption></figure><p>结语</p></article>');
+  preserveWechatLayout($, $("article")[0]);
+  const md = toMarkdown(sanitizeContent($("article").html()!));
+  assert.match(md, /### 原生标题\s+## 02 测试，结果/);
+  assert.ok(md.includes("前文**重点**例外后文"));
+  assert.ok(md.includes("![](" + image + ")\n\n_实验结果_\n\n结语"));
+});
