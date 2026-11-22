@@ -1,5 +1,6 @@
 import {spawnSync} from "node:child_process";
-import {copyFile, cp, link, mkdir, mkdtemp, readFile, rm} from "node:fs/promises";
+import {copyFile, link, mkdir, mkdtemp, readFile, rm} from "node:fs/promises";
+import {copyImages} from "./scripts/copy-images.mjs";
 import {tmpdir} from "node:os";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
@@ -38,7 +39,7 @@ async function read() {
         const target = path.join(dir, result.assets);
         await mkdir(target, {mode: 0o700});
         assetDir = target;
-        await cp(path.join(temp, result.assets), target, {recursive: true, force: false, errorOnExist: true});
+        await copyImages(path.join(temp, result.assets), target);
       }
       const stem = Array.from(result.title.replace(/[\x00-\x1f/\\:*?"<>|#^\[\]]/g, " ").trim().replace(/^\.+/, "") || "文章").slice(0, 48).join("");
       let index = 1;
